@@ -1,3 +1,4 @@
+import os
 import warnings
 
 import hydra
@@ -10,6 +11,8 @@ from src.trainer import Trainer
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging
 
 warnings.filterwarnings("ignore", category=UserWarning)
+
+os.environ["HYDRA_FULL_ERROR"] = "1"
 
 
 @hydra.main(version_base=None, config_path="src/configs", config_name="baseline")
@@ -33,15 +36,12 @@ def main(config):
     else:
         device = config.trainer.device
 
-    # setup text_encoder
-    text_encoder = instantiate(config.text_encoder)
-
     # setup data_loader instances
     # batch_transforms should be put on device
-    dataloaders, batch_transforms = get_dataloaders(config, text_encoder, device)
+    dataloaders, batch_transforms = get_dataloaders(config, device)
 
     # build model architecture, then print to console
-    model = instantiate(config.model, n_tokens=len(text_encoder)).to(device)
+    model = instantiate(config.model).to(device)
     logger.info(model)
 
     # get function handles of loss and metrics
@@ -50,10 +50,7 @@ def main(config):
     metrics = {"train": [], "inference": []}
     for metric_type in ["train", "inference"]:
         for metric_config in config.metrics.get(metric_type, []):
-            # use text_encoder in metrics
-            metrics[metric_type].append(
-                instantiate(metric_config, text_encoder=text_encoder)
-            )
+            metrics[metric_type].append(instantiate(metric_config))
 
     # build optimizer, learning rate scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
@@ -70,7 +67,6 @@ def main(config):
         metrics=metrics,
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
-        text_encoder=text_encoder,
         config=config,
         device=device,
         dataloaders=dataloaders,

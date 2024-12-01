@@ -22,7 +22,6 @@ class BaseTrainer:
         metrics,
         optimizer,
         lr_scheduler,
-        text_encoder,
         config,
         device,
         dataloaders,
@@ -42,7 +41,6 @@ class BaseTrainer:
             optimizer (Optimizer): optimizer for the model.
             lr_scheduler (LRScheduler): learning rate scheduler for the
                 optimizer.
-            text_encoder (CTCTextEncoder): text encoder.
             config (DictConfig): experiment config containing training config.
             device (str): device for tensors and model.
             dataloaders (dict[DataLoader]): dataloaders for different
@@ -72,7 +70,6 @@ class BaseTrainer:
         self.criterion = criterion
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
-        self.text_encoder = text_encoder
         self.batch_transforms = batch_transforms
 
         # define dataloaders
@@ -348,6 +345,8 @@ class BaseTrainer:
                 the dataloader with some of the tensors on the device.
         """
         for tensor_for_device in self.cfg_trainer.device_tensors:
+            print(tensor_for_device)
+            print(batch[tensor_for_device])
             batch[tensor_for_device] = batch[tensor_for_device].to(self.device)
         return batch
 

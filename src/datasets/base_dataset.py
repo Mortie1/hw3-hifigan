@@ -6,8 +6,6 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 
-from src.text_encoder import CTCTextEncoder
-
 logger = logging.getLogger(__name__)
 
 
@@ -23,8 +21,7 @@ class BaseDataset(Dataset):
     def __init__(
         self,
         index,
-        text_encoder=None,
-        target_sr=16000,
+        target_sr=22050,
         limit=None,
         max_audio_length=None,
         max_text_length=None,
@@ -36,7 +33,6 @@ class BaseDataset(Dataset):
             index (list[dict]): list, containing dict for each element of
                 the dataset. The dict has required metadata information,
                 such as label and object path.
-            text_encoder (CTCTextEncoder): text encoder.
             target_sr (int): supported sample rate.
             limit (int | None): if not None, limit the total number of elements
                 in the dataset to 'limit' elements.
@@ -59,7 +55,6 @@ class BaseDataset(Dataset):
 
         self._index: list[dict] = index
 
-        self.text_encoder = text_encoder
         self.target_sr = target_sr
         self.instance_transforms = instance_transforms
 
@@ -82,7 +77,13 @@ class BaseDataset(Dataset):
         audio_path = data_dict["path"]
         audio = self.load_audio(audio_path)
         text = data_dict["text"]
-        text_encoded = self.text_encoder.encode(text)
+
+        assert (
+            "get_spectrogram" in self.instance_transforms.keys()
+        ), "spectrogram is required"
+        self.spectrogram_pad_value = self.instance_transforms[
+            "get_spectrogram"
+        ].pad_value
 
         spectrogram = self.get_spectrogram(audio)
 
@@ -90,7 +91,6 @@ class BaseDataset(Dataset):
             "audio": audio,
             "spectrogram": spectrogram,
             "text": text,
-            "text_encoded": text_encoded,
             "audio_path": audio_path,
         }
 
@@ -114,6 +114,37 @@ class BaseDataset(Dataset):
         if sr != target_sr:
             audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
         return audio_tensor
+
+    def collate_fn(self, dataset_items: list[dict]):
+        """
+        Collate and pad fields in the dataset items.
+        Converts individual items into a batch.
+
+        Args:
+            dataset_items (list[dict]): list of objects from
+                dataset.__getitem__.
+        Returns:
+            result_batch (dict[Tensor]): dict, containing batch-version
+                of the tensors.
+        """
+
+        batch = {"audio": [], "spectrogram": [], "text": []}
+
+        for item in dataset_items:
+            batch["audio"] += item["audio"]
+            batch["spectrogram"] += item["spectrogram"].transpose(1, 2)
+            batch["text"] += item["text"]
+
+        batch["audio"] = torch.nn.utils.rnn.pad_sequence(
+            batch["audio"], batch_first=True
+        )
+        batch["spectrogram"] = torch.nn.utils.rnn.pad_sequence(
+            batch["spectrogram"],
+            batch_first=True,
+            padding_value=self.spectrogram_pad_value,
+        )
+
+        return batch
 
     def get_spectrogram(self, audio):
         """
@@ -154,7 +185,6 @@ class BaseDataset(Dataset):
     def _filter_records_from_dataset(
         index: list,
         max_audio_length,
-        max_text_length,
     ) -> list:
         """
         Filter some of the elements from the dataset depending on
@@ -165,7 +195,6 @@ class BaseDataset(Dataset):
                 the dataset. The dict has required metadata information,
                 such as label and object path.
             max_audio_length (int): maximum allowed audio length.
-            max_test_length (int): maximum allowed text length.
         Returns:
             index (list[dict]): list, containing dict for each element of
                 the dataset that satisfied the condition. The dict has
@@ -185,22 +214,8 @@ class BaseDataset(Dataset):
             exceeds_audio_length = False
 
         initial_size = len(index)
-        if max_text_length is not None:
-            exceeds_text_length = (
-                np.array(
-                    [len(CTCTextEncoder.normalize_text(el["text"])) for el in index]
-                )
-                >= max_text_length
-            )
-            _total = exceeds_text_length.sum()
-            logger.info(
-                f"{_total} ({_total / initial_size:.1%}) records are longer then "
-                f"{max_text_length} characters. Excluding them."
-            )
-        else:
-            exceeds_text_length = False
 
-        records_to_filter = exceeds_text_length | exceeds_audio_length
+        records_to_filter = exceeds_audio_length
 
         if records_to_filter is not False and records_to_filter.any():
             _total = records_to_filter.sum()
