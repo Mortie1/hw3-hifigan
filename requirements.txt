@@ -1,4 +1,5 @@
 torch==2.5.1
+torchvision==0.20.1
 torchaudio==2.5.1
 soundfile
 numpy==1.26.4
@@ -11,6 +12,7 @@ comet_ml
 hydra-core
 transformers
 datasets
+speechbrain
 
 black
 isort
