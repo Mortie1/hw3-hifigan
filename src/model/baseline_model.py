@@ -7,7 +7,7 @@ class BaselineModel(nn.Module):
     Simple MLP
     """
 
-    def __init__(self, n_feats, n_tokens, fc_hidden=512):
+    def __init__(self, n_feats, n_tokens=5, fc_hidden=512):
         """
         Args:
             n_feats (int): number of input features.

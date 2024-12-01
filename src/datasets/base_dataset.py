@@ -46,9 +46,7 @@ class BaseDataset(Dataset):
         """
         self._assert_index_is_valid(index)
 
-        index = self._filter_records_from_dataset(
-            index, max_audio_length, max_text_length
-        )
+        index = self._filter_records_from_dataset(index, max_audio_length)
         index = self._shuffle_and_limit_index(index, limit, shuffle_index)
         if not shuffle_index:
             index = self._sort_index(index)

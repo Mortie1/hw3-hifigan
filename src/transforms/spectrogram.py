@@ -22,10 +22,12 @@ class MelSpectrogramConfig:
 
 
 class MelSpectrogram(nn.Module):
-    def __init__(self, config: MelSpectrogramConfig):
+    def __init__(self, config: MelSpectrogramConfig, normalize_audio: bool = True):
         super(MelSpectrogram, self).__init__()
 
         self.config = config
+
+        self.normalize_audio = normalize_audio
 
         self.mel_spectrogram = torchaudio.transforms.MelSpectrogram(
             sample_rate=config.sr,
@@ -59,7 +61,8 @@ class MelSpectrogram(nn.Module):
         :param audio: Expected shape is [B, T]
         :return: Shape is [B, n_mels, T']
         """
-
+        if self.normalize_audio:
+            audio = audio / torch.abs(audio).max(dim=1)[0]
         mel = self.mel_spectrogram(audio).clamp_(min=1e-5).log_()
 
         return mel
