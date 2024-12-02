@@ -18,10 +18,14 @@ class BaseTrainer:
     def __init__(
         self,
         model,
+        discriminator,
         criterion,
+        discriminator_criterion,
         metrics,
         optimizer,
         lr_scheduler,
+        discriminator_optimizer,
+        discriminator_lr_scheduler,
         config,
         device,
         dataloaders,
@@ -71,6 +75,11 @@ class BaseTrainer:
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.batch_transforms = batch_transforms
+
+        self.discriminator = discriminator
+        self.discriminator_criterion = discriminator_criterion
+        self.discriminator_optimizer = discriminator_optimizer
+        self.discriminator_lr_scheduler = discriminator_lr_scheduler
 
         # define dataloaders
         self.train_dataloader = dataloaders["train"]
@@ -199,6 +208,7 @@ class BaseTrainer:
         """
         self.is_train = True
         self.model.train()
+        self.discriminator.train()
         self.train_metrics.reset()
         self.writer.set_step((epoch - 1) * self.epoch_len)
         self.writer.add_scalar("epoch", epoch)
@@ -262,6 +272,7 @@ class BaseTrainer:
         """
         self.is_train = False
         self.model.eval()
+        self.discriminator.eval()
         self.evaluation_metrics.reset()
         with torch.no_grad():
             for batch_idx, batch in tqdm(
@@ -381,6 +392,9 @@ class BaseTrainer:
         if self.config["trainer"].get("max_grad_norm", None) is not None:
             clip_grad_norm_(
                 self.model.parameters(), self.config["trainer"]["max_grad_norm"]
+            )
+            clip_grad_norm_(
+                self.discriminator.parameters(), self.config["trainer"]["max_grad_norm"]
             )
 
     @torch.no_grad()

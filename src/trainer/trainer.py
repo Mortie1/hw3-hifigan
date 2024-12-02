@@ -39,9 +39,13 @@ class Trainer(BaseTrainer):
         if self.is_train:
             metric_funcs = self.metrics["train"]
             self.optimizer.zero_grad()
+            self.discriminator_optimizer.zero_grad()
 
         outputs = self.model(**batch)
         batch.update(outputs)
+
+        discriminator_outputs = self.discriminator(**batch)
+        batch.update(discriminator_outputs)
 
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
@@ -50,8 +54,10 @@ class Trainer(BaseTrainer):
             batch["loss"].backward()  # sum of all losses is always called loss
             self._clip_grad_norm()
             self.optimizer.step()
+            self.discriminator_optimizer.step()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
+                self.discriminator_lr_scheduler.step()
 
         # update metrics for each loss (in case of multiple losses)
         for loss_name in self.config.writer.loss_names:

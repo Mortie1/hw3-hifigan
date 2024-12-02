@@ -42,10 +42,14 @@ def main(config):
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
+    discriminator = instantiate(config.discriminator).to(device)
     logger.info(model)
 
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)
+    discriminator_loss_function = instantiate(config.discriminator_loss_function).to(
+        device
+    )
 
     metrics = {"train": [], "inference": []}
     for metric_type in ["train", "inference"]:
@@ -57,16 +61,30 @@ def main(config):
     optimizer = instantiate(config.optimizer, params=trainable_params)
     lr_scheduler = instantiate(config.lr_scheduler, optimizer=optimizer)
 
+    discriminator_trainable_params = filter(
+        lambda p: p.requires_grad, discriminator.parameters()
+    )
+    discriminator_optimizer = instantiate(
+        config.optimizer, params=discriminator_trainable_params
+    )
+    discriminator_lr_scheduler = instantiate(
+        config.lr_scheduler, optimizer=discriminator_optimizer
+    )
+
     # epoch_len = number of iterations for iteration-based training
     # epoch_len = None or len(dataloader) for epoch-based training
     epoch_len = config.trainer.get("epoch_len")
 
     trainer = Trainer(
         model=model,
+        discriminator=discriminator,
         criterion=loss_function,
+        discriminator_criterion=discriminator_loss_function,
         metrics=metrics,
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
+        discriminator_optimizer=discriminator_optimizer,
+        discriminator_lr_scheduler=discriminator_lr_scheduler,
         config=config,
         device=device,
         dataloaders=dataloaders,
