@@ -1,0 +1,2 @@
+from src.model.hifigan_blocks.discriminator import MultiPeriodDiscriminator
+from src.model.hifigan_blocks.generator import HiFiGanGenerator

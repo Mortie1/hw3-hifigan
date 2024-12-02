@@ -16,14 +16,15 @@ class MelSpectrogramConfig:
     f_max: int = 8000
     n_mels: int = 80
     power: float = 1.0
+    center: bool = False
 
     # value of melspectrograms if we fed a silence into `MelSpectrogram`
     pad_value: float = -11.5129251
 
 
 class MelSpectrogram(nn.Module):
-    def __init__(self, config: MelSpectrogramConfig, normalize_audio: bool = True):
-        super(MelSpectrogram, self).__init__()
+    def __init__(self, config: MelSpectrogramConfig, normalize_audio: bool = False):
+        super().__init__()
 
         self.config = config
 
@@ -37,6 +38,8 @@ class MelSpectrogram(nn.Module):
             f_min=config.f_min,
             f_max=config.f_max,
             n_mels=config.n_mels,
+            power=config.power,
+            center=config.center,
         )
 
         # needed for collate_fn paddings
@@ -63,6 +66,14 @@ class MelSpectrogram(nn.Module):
         """
         if self.normalize_audio:
             audio = audio / torch.abs(audio).max(dim=1)[0]
+        audio = torch.nn.functional.pad(
+            audio,
+            (
+                (self.config.n_fft - self.config.hop_length) // 2,
+                (self.config.n_fft - self.config.hop_length) // 2,
+            ),
+            mode="reflect",
+        )
         mel = self.mel_spectrogram(audio).clamp_(min=1e-5).log_()
 
         return mel

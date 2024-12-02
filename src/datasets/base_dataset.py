@@ -130,12 +130,13 @@ class BaseDataset(Dataset):
 
         for item in dataset_items:
             batch["audio"] += item["audio"]
-            batch["spectrogram"] += item["spectrogram"].transpose(1, 2)
+            batch["spectrogram"] += item["spectrogram"]
             batch["text"] += item["text"]
 
         batch["audio"] = torch.nn.utils.rnn.pad_sequence(
             batch["audio"], batch_first=True
         )
+
         batch["spectrogram"] = torch.nn.utils.rnn.pad_sequence(
             batch["spectrogram"],
             batch_first=True,
