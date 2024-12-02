@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import torch
 from torch import nn
@@ -18,33 +18,41 @@ class HiFiGanGenerator(nn.Module):
         upsampling_kernels: List[int] = [16, 16, 4, 4],
         mrf_kernels: List[int] = [3, 7, 11],
         mrf_dilations: List[List[Tuple[int, int]]] = [[1, 3, 5] * 3],
+        activation: nn.Module = nn.LeakyReLU(negative_slope=0.1),
+        norm: Optional[Callable] = nn.utils.parametrizations.weight_norm,
     ):
         super().__init__()
         self.hidden_channels = hidden_channels
         self.upsampling_kernels = upsampling_kernels
 
-        self.in_conv = nn.Conv1d(
-            in_channels=80,
-            out_channels=self.hidden_channels,
-            kernel_size=7,
-            padding=3,
+        self.in_conv = norm(
+            nn.Conv1d(
+                in_channels=80,
+                out_channels=self.hidden_channels,
+                kernel_size=7,
+                padding=3,
+            )
         )
 
         self.upsampling = nn.Sequential(
             *[
                 nn.Sequential(
-                    nn.LeakyReLU(),
-                    nn.ConvTranspose1d(
-                        in_channels=self.hidden_channels // (2**i),
-                        out_channels=self.hidden_channels // (2 ** (i + 1)),
-                        kernel_size=kernel,
-                        stride=kernel // 2,
-                        padding=(kernel - kernel // 2) // 2,
+                    activation,
+                    norm(
+                        nn.ConvTranspose1d(
+                            in_channels=self.hidden_channels // (2**i),
+                            out_channels=self.hidden_channels // (2 ** (i + 1)),
+                            kernel_size=kernel,
+                            stride=kernel // 2,
+                            padding=(kernel - kernel // 2) // 2,
+                        )
                     ),
                     MRF(
                         n_channels=self.hidden_channels // (2 ** (i + 1)),
                         blocks_kernels=mrf_kernels,
                         blocks_dilations=mrf_dilations,
+                        activation=activation,
+                        norm=norm,
                     ),
                 )
                 for i, kernel in enumerate(self.upsampling_kernels)
@@ -56,9 +64,9 @@ class HiFiGanGenerator(nn.Module):
             out_channels=1,
             kernel_size=7,
             padding=3,
-            norm=nn.Identity(),
-            activation=nn.LeakyReLU(),
+            activation=activation,
             pre_activation=True,
+            norm=norm,
         )
 
     def forward(self, spectrogram: torch.Tensor, **batch) -> Dict:
@@ -72,7 +80,6 @@ class HiFiGanGenerator(nn.Module):
         x = self.upsampling(x)
 
         x = self.out_conv(x)
-        print(x.shape)
         audio = torch.nn.functional.tanh(x)
         audio = audio.reshape(audio.shape[0], -1)
         return {"output_audio": audio}
@@ -100,7 +107,15 @@ class HiFiGanDiscriminator(nn.Module):
         self.msd = MultiScaleDiscriminator()
         self.mpd = MultiPeriodDiscriminator()
 
-    def forward(self, output_audio: torch.Tensor, audio: torch.Tensor, **batch) -> Dict:
+    def forward(
+        self,
+        output_audio: torch.Tensor,
+        audio: torch.Tensor,
+        detach_generated: bool = False,
+        **batch,
+    ) -> Dict:
+        if detach_generated:
+            output_audio = output_audio.detach()
         return {
             "msd_target_features": self.msd(audio),
             "mpd_target_features": self.mpd(audio),

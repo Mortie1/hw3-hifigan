@@ -20,6 +20,7 @@ class WandBWriter:
         run_id=None,
         run_name=None,
         mode="online",
+        audio_sample_rate=22050,
         **kwargs,
     ):
         """
@@ -64,6 +65,7 @@ class WandBWriter:
         # used to separate Partition1 and Partition2 metrics
         self.mode = ""
         self.timer = datetime.now()
+        self.audio_sample_rate = audio_sample_rate
 
     def set_step(self, step, mode="train"):
         """
@@ -219,6 +221,27 @@ class WandBWriter:
             {self._object_name(table_name): self.wandb.Table(dataframe=table)},
             step=self.step,
         )
+
+    def add_wb_table(self, table_name, columns, data):
+        """
+        Log table to the experiment tracker.
+
+        Args:
+            table_name (str): name of the table to use in the tracker.
+            table (DataFrame): table content.
+        """
+        self.wandb.log(
+            {
+                self._object_name(table_name): self.wandb.Table(
+                    columns=columns, data=data
+                )
+            },
+            step=self.step,
+        )
+
+    def convert_audio(self, audio):
+        audio = audio.detach().cpu().numpy().T
+        return self.wandb.Audio(audio, sample_rate=self.audio_sample_rate)
 
     def add_images(self, image_names, images):
         raise NotImplementedError()

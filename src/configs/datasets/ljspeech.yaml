@@ -2,7 +2,9 @@ train:
   _target_: src.datasets.LJspeechDataset
   part: "train"
   instance_transforms: ${transforms.instance_transforms.train}
+  # limit: 1
 test:
   _target_: src.datasets.LJspeechDataset
   part: "test"
   instance_transforms: ${transforms.instance_transforms.inference}
+  # limit: 1

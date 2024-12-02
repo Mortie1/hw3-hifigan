@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import torch
 from torch import nn
@@ -7,7 +7,14 @@ from src.model.hifigan_blocks.conv_block import Conv1dBlock
 
 
 class ResBlock(nn.Module):
-    def __init__(self, kernel_size: int, dilations: List[int], n_channels: int):
+    def __init__(
+        self,
+        kernel_size: int,
+        dilations: List[int],
+        n_channels: int,
+        activation: nn.Module = nn.LeakyReLU(negative_slope=0.1),
+        norm: Optional[Callable] = nn.utils.parametrizations.weight_norm,
+    ):
         super().__init__()
         self.n_channels = n_channels
         self.kernel_size = kernel_size
@@ -21,8 +28,8 @@ class ResBlock(nn.Module):
                     kernel_size=kernel_size,
                     padding=dilation * (kernel_size - 1) // 2,
                     dilation=dilation,
-                    activation=nn.LeakyReLU(),
-                    norm=nn.Identity(),
+                    activation=activation,
+                    norm=norm,
                     pre_activation=True,
                 )
                 for dilation in dilations
@@ -30,7 +37,8 @@ class ResBlock(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x + self.convs(x)
+        out = x + self.convs(x)
+        return out
 
 
 class MRF(nn.Module):
@@ -39,6 +47,8 @@ class MRF(nn.Module):
         n_channels: int,
         blocks_kernels: List[int] = [3, 7, 11],
         blocks_dilations: List[List[int]] = [[1, 3, 5] * 3],
+        activation: nn.Module = nn.LeakyReLU(negative_slope=0.1),
+        norm: Optional[Callable] = nn.utils.parametrizations.weight_norm,
     ):
         super().__init__()
         self.n_channels = n_channels
@@ -48,7 +58,11 @@ class MRF(nn.Module):
         self.blocks = nn.ModuleList(
             [
                 ResBlock(
-                    kernel_size=kernel, dilations=dilations, n_channels=self.n_channels
+                    kernel_size=kernel,
+                    dilations=dilations,
+                    n_channels=self.n_channels,
+                    activation=activation,
+                    norm=norm,
                 )
                 for kernel, dilations in zip(self.blocks_kernels, self.blocks_dilations)
             ]
@@ -58,4 +72,5 @@ class MRF(nn.Module):
         result = torch.zeros_like(x)
         for block in self.blocks:
             result = result + block(x)
+        result = result / len(self.blocks)
         return result

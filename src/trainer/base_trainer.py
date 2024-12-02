@@ -34,6 +34,7 @@ class BaseTrainer:
         epoch_len=None,
         skip_oom=True,
         batch_transforms=None,
+        amp_dtype=None,
     ):
         """
         Args:
@@ -150,6 +151,8 @@ class BaseTrainer:
 
         if config.trainer.get("from_pretrained") is not None:
             self._from_pretrained(config.trainer.get("from_pretrained"))
+
+        self.amp_dtype = amp_dtype
 
     def train(self):
         """
@@ -481,8 +484,11 @@ class BaseTrainer:
             "arch": arch,
             "epoch": epoch,
             "state_dict": self.model.state_dict(),
+            "discriminator_state_dict": self.discriminator.state_dict(),
             "optimizer": self.optimizer.state_dict(),
+            "discriminator_optimizer": self.discriminator_optimizer.state_dict(),
             "lr_scheduler": self.lr_scheduler.state_dict(),
+            "discriminator_lr_scheduler": self.discriminator_lr_scheduler.state_dict(),
             "monitor_best": self.mnt_best,
             "config": self.config,
         }
@@ -524,6 +530,7 @@ class BaseTrainer:
                 "of the checkpoint. This may yield an exception when state_dict is loaded."
             )
         self.model.load_state_dict(checkpoint["state_dict"])
+        self.discriminator.load_state_dict(checkpoint["discriminator_state_dict"])
 
         # load optimizer state from checkpoint only when optimizer type is not changed.
         if (
@@ -538,6 +545,13 @@ class BaseTrainer:
         else:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
             self.lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
+
+            self.discriminator_optimizer.load_state_dict(
+                checkpoint["discriminator_optimizer"]
+            )
+            self.discriminator_lr_scheduler.load_state_dict(
+                checkpoint["discriminator_lr_scheduler"]
+            )
 
         self.logger.info(
             f"Checkpoint loaded. Resume training from epoch {self.start_epoch}"

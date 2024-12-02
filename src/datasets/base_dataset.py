@@ -22,9 +22,9 @@ class BaseDataset(Dataset):
         self,
         index,
         target_sr=22050,
+        audio_chunk_size=16384,
         limit=None,
         max_audio_length=None,
-        max_text_length=None,
         shuffle_index=False,
         instance_transforms=None,
     ):
@@ -55,6 +55,8 @@ class BaseDataset(Dataset):
 
         self.target_sr = target_sr
         self.instance_transforms = instance_transforms
+
+        self.audio_chunk_size = audio_chunk_size
 
     def __getitem__(self, ind):
         """
@@ -111,6 +113,20 @@ class BaseDataset(Dataset):
         target_sr = self.target_sr
         if sr != target_sr:
             audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
+        if self.audio_chunk_size > 0:
+            if audio_tensor.shape[1] > self.audio_chunk_size:
+                # DEBUG - TURN ON ON REAL TRAIN
+                random_start = random.randint(
+                    0, audio_tensor.shape[1] - self.audio_chunk_size
+                )
+                # random_start = 0
+                audio_tensor = audio_tensor[
+                    :, random_start : random_start + self.audio_chunk_size
+                ]
+            else:
+                audio_tensor = torch.nn.functional.pad(
+                    audio_tensor, (0, self.audio_chunk_size - audio_tensor.shape[1])
+                )
         return audio_tensor
 
     def collate_fn(self, dataset_items: list[dict]):
@@ -130,7 +146,7 @@ class BaseDataset(Dataset):
 
         for item in dataset_items:
             batch["audio"] += item["audio"]
-            batch["spectrogram"] += item["spectrogram"]
+            batch["spectrogram"] += item["spectrogram"].transpose(1, 2)
             batch["text"] += item["text"]
 
         batch["audio"] = torch.nn.utils.rnn.pad_sequence(
@@ -141,7 +157,7 @@ class BaseDataset(Dataset):
             batch["spectrogram"],
             batch_first=True,
             padding_value=self.spectrogram_pad_value,
-        )
+        ).transpose(1, 2)
 
         return batch
 

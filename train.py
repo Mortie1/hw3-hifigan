@@ -41,8 +41,8 @@ def main(config):
     dataloaders, batch_transforms = get_dataloaders(config, device)
 
     # build model architecture, then print to console
-    model = instantiate(config.model).to(device)
-    discriminator = instantiate(config.discriminator).to(device)
+    model = instantiate(config.model, _convert_="partial").to(device)
+    discriminator = instantiate(config.discriminator, _convert_="partial").to(device)
     logger.info(model)
 
     # get function handles of loss and metrics
@@ -93,6 +93,7 @@ def main(config):
         writer=writer,
         batch_transforms=batch_transforms,
         skip_oom=config.trainer.get("skip_oom", True),
+        amp_dtype=config.trainer.get("amp_dtype", None),
     )
 
     trainer.train()

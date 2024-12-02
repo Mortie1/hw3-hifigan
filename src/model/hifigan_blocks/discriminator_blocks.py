@@ -7,7 +7,9 @@ from src.model.hifigan_blocks.conv_block import Conv1dBlock, Conv2dBlock
 
 
 class MPDBlock(nn.Module):
-    def __init__(self, period: int):
+    def __init__(
+        self, period: int, activation: nn.Module = nn.LeakyReLU(negative_slope=0.1)
+    ):
         super().__init__()
         self.period = period
         self.in_conv = Conv2dBlock(
@@ -16,8 +18,8 @@ class MPDBlock(nn.Module):
             kernel_size=(5, 1),
             stride=(3, 1),
             padding=(2, 0),
-            activation=nn.LeakyReLU(),
-            norm=nn.Identity(),
+            activation=activation,
+            norm=nn.utils.parametrizations.spectral_norm,
             pre_activation=False,
         )
 
@@ -29,8 +31,8 @@ class MPDBlock(nn.Module):
                     kernel_size=(5, 1),
                     stride=(3, 1),
                     padding=(2, 0),
-                    norm=nn.Identity(),
-                    activation=nn.LeakyReLU(),
+                    norm=nn.utils.parametrizations.weight_norm,
+                    activation=activation,
                     pre_activation=False,
                 )
                 for i in range(1, 4)
@@ -41,8 +43,8 @@ class MPDBlock(nn.Module):
                     out_channels=1024,
                     kernel_size=(5, 1),
                     padding=(2, 0),
-                    norm=nn.Identity(),
-                    activation=nn.LeakyReLU(),
+                    norm=nn.utils.parametrizations.weight_norm,
+                    activation=activation,
                     pre_activation=False,
                 ),
             ]
@@ -69,8 +71,8 @@ class MPDBlock(nn.Module):
 
         features = [self.in_conv(x)]
         for conv in self.main_convs:
-            features += [conv(features[-1])]
-        features += [self.out_conv(x)]
+            features = features + [conv(features[-1])]
+        features = features + [self.out_conv(features[-1])]
 
         return features
 
@@ -86,12 +88,12 @@ class MultiPeriodDiscriminator(nn.Module):
     def forward(self, audio: torch.Tensor) -> List[List[torch.Tensor]]:
         features = []
         for discriminator in self.discriminators:
-            features += [discriminator(audio)]
+            features = features + [discriminator(audio)]
         return features
 
 
 class MSDBlock(nn.Module):
-    def __init__(self):
+    def __init__(self, activation: nn.Module = nn.LeakyReLU(negative_slope=0.1)):
         super().__init__()
         self.in_conv = Conv1dBlock(
             kernel_size=15,
@@ -99,8 +101,8 @@ class MSDBlock(nn.Module):
             in_channels=1,
             out_channels=16,
             padding=7,
-            activation=nn.LeakyReLU(),
-            norm=nn.Identity(),
+            activation=activation,
+            norm=nn.utils.parametrizations.weight_norm,
             pre_activation=False,
         )
         self.downsample_convs = nn.ModuleList(
@@ -112,8 +114,8 @@ class MSDBlock(nn.Module):
                     out_channels=16 * (4 ** (i + 1)),
                     padding=20,
                     groups=4 ** (i + 1),
-                    activation=nn.LeakyReLU(),
-                    norm=nn.Identity(),
+                    activation=activation,
+                    norm=nn.utils.parametrizations.weight_norm,
                     pre_activation=False,
                 )
                 for i in range(3)
@@ -126,8 +128,8 @@ class MSDBlock(nn.Module):
                     out_channels=1024,
                     padding=20,
                     groups=256,
-                    activation=nn.LeakyReLU(),
-                    norm=nn.Identity(),
+                    activation=activation,
+                    norm=nn.utils.parametrizations.weight_norm,
                     pre_activation=False,
                 )
             ]
@@ -138,8 +140,8 @@ class MSDBlock(nn.Module):
             kernel_size=5,
             stride=1,
             padding=2,
-            norm=nn.Identity(),
-            activation=nn.LeakyReLU(),
+            norm=nn.utils.parametrizations.weight_norm,
+            activation=activation,
             pre_activation=False,
         )
         self.out_conv2 = Conv1dBlock(
@@ -148,17 +150,18 @@ class MSDBlock(nn.Module):
             kernel_size=3,
             stride=1,
             padding=2,
-            norm=nn.Identity(),
+            norm=nn.utils.parametrizations.weight_norm,
             activation=nn.Identity(),
             pre_activation=False,
         )
 
     def forward(self, audio: torch.Tensor) -> List[torch.Tensor]:
+        audio = audio.unsqueeze(1)
         features = [self.in_conv(audio)]
         for downsample_conv in self.downsample_convs:
-            features += [downsample_conv(features[-1])]
-        features += [self.out_conv1(features[-1])]
-        features += [self.out_conv2(features[-1])]
+            features = features + [downsample_conv(features[-1])]
+        features = features + [self.out_conv1(features[-1])]
+        features = features + [self.out_conv2(features[-1])]
         return features
 
 
@@ -175,5 +178,5 @@ class MultiScaleDiscriminator(nn.Module):
     def forward(self, audio: torch.Tensor) -> List[List[torch.Tensor]]:
         features = []
         for discriminator, avg_pool in zip(self.discriminators, self.avg_pools):
-            features += [discriminator(avg_pool(audio))]
+            features = features + [discriminator(avg_pool(audio))]
         return features
