@@ -20,9 +20,9 @@ loss_function:
 discriminator_loss_function:
   _target_: src.loss.DiscriminatorLoss
 trainer:
-  log_step: 50
-  n_epochs: 50
-  epoch_len: 200
+  log_step: 100
+  n_epochs: 1
+  epoch_len: 500
   device_tensors: ["spectrogram", "audio"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
@@ -31,9 +31,10 @@ trainer:
   save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
   early_stop: ${trainer.n_epochs} # epochs for early stopping
   save_dir: "saved"
-  amp_float_type:
+  amp_dtype:
     _target_: torch.__dict__.get
     _args_:
       - bfloat16
+  compile_model: True
   # max_grad_norm: 5
   seed: 1

@@ -42,7 +42,12 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
             self.discriminator_optimizer.zero_grad()
 
-        with torch.autocast(dtype=self.amp_dtype, enabled=self.amp_dtype is not None):
+        # start = time.time()
+        with torch.autocast(
+            device_type=self.device,
+            dtype=self.amp_dtype,
+            enabled=self.amp_dtype is not None,
+        ):
             outputs = self.model(**batch)
             batch.update(outputs)
 
@@ -59,7 +64,11 @@ class Trainer(BaseTrainer):
             if self.discriminator_lr_scheduler is not None:
                 self.discriminator_lr_scheduler.step()
 
-        with torch.autocast(dtype=self.amp_dtype, enabled=self.amp_dtype is not None):
+        with torch.autocast(
+            device_type=self.device,
+            dtype=self.amp_dtype,
+            enabled=self.amp_dtype is not None,
+        ):
             discriminator_outputs = self.discriminator(**batch, detach_generated=False)
             batch.update(discriminator_outputs)
 

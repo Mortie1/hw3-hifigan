@@ -45,6 +45,8 @@ def main(config):
     discriminator = instantiate(config.discriminator, _convert_="partial").to(device)
     logger.info(model)
 
+    torch.backends.cudnn.benchmark = True  # remove slow_dilated_conv2d
+
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)
     discriminator_loss_function = instantiate(config.discriminator_loss_function).to(
@@ -93,7 +95,8 @@ def main(config):
         writer=writer,
         batch_transforms=batch_transforms,
         skip_oom=config.trainer.get("skip_oom", True),
-        amp_dtype=config.trainer.get("amp_dtype", None),
+        amp_dtype=instantiate(config.trainer.get("amp_dtype", None)),
+        compile_model=config.trainer.get("compile_model", False),
     )
 
     trainer.train()

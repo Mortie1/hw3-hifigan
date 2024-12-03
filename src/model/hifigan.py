@@ -78,10 +78,11 @@ class HiFiGanGenerator(nn.Module):
         """
         x = self.in_conv(spectrogram)
         x = self.upsampling(x)
-
         x = self.out_conv(x)
+
         audio = torch.nn.functional.tanh(x)
         audio = audio.reshape(audio.shape[0], -1)
+
         return {"output_audio": audio}
 
     def __str__(self):

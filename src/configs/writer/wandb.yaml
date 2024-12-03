@@ -1,7 +1,7 @@
 _target_: src.logger.WandBWriter
 project_name: "dla-hw3-hifigan"
 entity: null
-run_name: "first real run"
+run_name: "night run - default hifigan v1"
 mode: "online"
 loss_names: ["loss"] # which losses to log (useful for multi-loss tasks, s.a. GANs)
 log_checkpoints: False # set to True if you want to log save_dir with checkpoints to W&B

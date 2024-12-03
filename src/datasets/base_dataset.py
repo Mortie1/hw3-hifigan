@@ -81,6 +81,7 @@ class BaseDataset(Dataset):
         assert (
             "get_spectrogram" in self.instance_transforms.keys()
         ), "spectrogram is required"
+
         self.spectrogram_pad_value = self.instance_transforms[
             "get_spectrogram"
         ].pad_value
@@ -115,10 +116,10 @@ class BaseDataset(Dataset):
             audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
         if self.audio_chunk_size > 0:
             if audio_tensor.shape[1] > self.audio_chunk_size:
-                # DEBUG - TURN ON ON REAL TRAIN
                 random_start = random.randint(
                     0, audio_tensor.shape[1] - self.audio_chunk_size
                 )
+                # DEBUG - TURN OFF ON REAL TRAIN
                 # random_start = 0
                 audio_tensor = audio_tensor[
                     :, random_start : random_start + self.audio_chunk_size

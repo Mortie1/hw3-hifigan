@@ -9,6 +9,8 @@ from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
 
+# from torch.profiler import profile, record_function, ProfilerActivity
+
 
 class BaseTrainer:
     """
@@ -35,6 +37,7 @@ class BaseTrainer:
         skip_oom=True,
         batch_transforms=None,
         amp_dtype=None,
+        compile_model=None,
     ):
         """
         Args:
@@ -72,6 +75,8 @@ class BaseTrainer:
         self.log_step = config.trainer.get("log_step", 50)
 
         self.model = model
+        if compile_model:
+            self.model.compile()
         self.criterion = criterion
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
@@ -215,6 +220,7 @@ class BaseTrainer:
         self.train_metrics.reset()
         self.writer.set_step((epoch - 1) * self.epoch_len)
         self.writer.add_scalar("epoch", epoch)
+        # with profile(activities=[ProfilerActivity.CPU]) as prof:
         for batch_idx, batch in enumerate(
             tqdm(self.train_dataloader, desc="train", total=self.epoch_len)
         ):
@@ -252,6 +258,7 @@ class BaseTrainer:
                 self.train_metrics.reset()
             if batch_idx + 1 >= self.epoch_len:
                 break
+        # prof.export_chrome_trace("trace_with_cudnn_benchmark1.json")
 
         logs = last_train_metrics
 
