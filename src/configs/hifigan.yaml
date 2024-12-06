@@ -29,7 +29,7 @@ trainer:
   epoch_len: 500
   device_tensors: ["spectrogram", "audio"] # which tensors should be on device (ex. GPU)
   # resume_from: /home/mortie/dla/hw3-hifigan/saved/final(?) fix of discriminator loss/checkpoint-epoch20.pth # null or path to the checkpoint dir with *.pth and config.yaml
-  from_pretrained: /home/mortie/dla/hw3-hifigan/saved/final(?) fix of discriminator loss/checkpoint-epoch100.pth
+  # from_pretrained: /home/mortie/dla/hw3-hifigan/saved/final(?) fix of discriminator loss/checkpoint-epoch100.pth
   device: auto # device name or "auto"
   override: False  # if True, will override the previous run with the same name
   monitor: "min test_loss" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric

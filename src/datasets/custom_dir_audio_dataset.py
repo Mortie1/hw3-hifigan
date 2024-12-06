@@ -11,6 +11,7 @@ class CustomDirAudioDataset(BaseDataset):
             if path.suffix in [".mp3", ".wav", ".flac", ".m4a"]:
                 entry["path"] = str(path)
                 entry["text"] = None
+                entry["audio_len"] = 0
             if len(entry) > 0:
                 data.append(entry)
         super().__init__(data, *args, **kwargs)

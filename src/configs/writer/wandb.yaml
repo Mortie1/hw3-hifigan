@@ -1,7 +1,7 @@
 _target_: src.logger.WandBWriter
 project_name: "dla-hw3-hifigan"
 entity: null
-run_name: "test6"
+run_name: "test that training is ok"
 # run_id: j06t8yjg  # REMOVE IF NOT NEEDED used to continue run
 mode: "offline"
 loss_names: ["loss", "discriminator_loss", "adv_loss", "melspec_loss", "fm_loss", "mpd_loss", "msd_loss"] # which losses to log (useful for multi-loss tasks, s.a. GANs)

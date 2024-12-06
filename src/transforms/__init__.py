@@ -1,1 +1,2 @@
 from src.transforms.spectrogram import MelSpectrogram, MelSpectrogramConfig
+from src.transforms.spectrogram_generator import FairSeqSpectrogramGenerator

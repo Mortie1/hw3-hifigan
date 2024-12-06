@@ -1,0 +1,4 @@
+test:
+  _target_: src.datasets.CustomDirTextDataset
+  instance_transforms: ${transforms.instance_transforms.inference}
+  data_dir: ./data/datasets/synthesize

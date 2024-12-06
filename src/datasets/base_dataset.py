@@ -75,7 +75,7 @@ class BaseDataset(Dataset):
         """
         data_dict = self._index[ind]
         path = data_dict["path"]
-        audio = self.load_audio(path) if path.split(".")[-1] == "wav" else None
+        audio = self.load_audio(path) if str(path).split(".")[-1] == "wav" else None
         text = data_dict["text"]
 
         assert (
@@ -86,7 +86,11 @@ class BaseDataset(Dataset):
             "get_spectrogram"
         ].pad_value
 
-        spectrogram = self.get_spectrogram(audio)
+        spectrogram = (
+            self.get_spectrogram(audio)
+            if audio is not None
+            else self.get_spectrogram([text])
+        )
 
         instance_data = {
             "audio": audio,
@@ -143,14 +147,15 @@ class BaseDataset(Dataset):
         batch = {"audio": [], "spectrogram": [], "text": [], "path": []}
 
         for item in dataset_items:
-            batch["audio"] += item["audio"]
+            batch["audio"] += item["audio"] if item["audio"] is not None else []
             batch["spectrogram"] += item["spectrogram"].transpose(1, 2)
             batch["text"] += [item["text"]]
             batch["path"] += [item["path"]]
 
-        batch["audio"] = torch.nn.utils.rnn.pad_sequence(
-            batch["audio"], batch_first=True
-        )
+        if len(batch["audio"]) != 0:
+            batch["audio"] = torch.nn.utils.rnn.pad_sequence(
+                batch["audio"], batch_first=True
+            )
 
         batch["spectrogram"] = torch.nn.utils.rnn.pad_sequence(
             batch["spectrogram"],

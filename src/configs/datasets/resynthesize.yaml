@@ -1,0 +1,5 @@
+test:
+  _target_: src.datasets.CustomDirAudioDataset
+  instance_transforms: ${transforms.instance_transforms.inference}
+  audio_dir: /home/mortie/dla/hw3-hifigan/data/datasets/ljspeech/test
+  audio_chunk_size: -1

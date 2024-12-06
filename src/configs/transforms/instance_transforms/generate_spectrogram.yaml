@@ -1,0 +1,6 @@
+inference:
+  get_spectrogram:
+    _target_: src.transforms.FairSeqSpectrogramGenerator
+    model_name: "facebook/fastspeech2-en-ljspeech"
+    fp16: False
+    device: "cuda"

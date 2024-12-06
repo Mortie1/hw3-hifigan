@@ -1,0 +1,13 @@
+defaults:
+  - model: hifigan_generator
+  - metrics: no_metrics
+  - datasets: resynthesize # we do not want to run inference on training data
+  - dataloader: resynthesize
+  - transforms: only_spectrogram
+  - _self_
+inferencer:
+  device_tensors: ["spectrogram"] # which tensors should be on device (ex. GPU)
+  device: auto # device name or "auto"
+  save_path: "test_dataset" # any name here, can be a dataset name
+  seed: 1
+  from_pretrained: "./saved/final(?) fix of discriminator loss/checkpoint-epoch100.pth" # path to the pretrained model

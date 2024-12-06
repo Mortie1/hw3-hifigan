@@ -46,7 +46,7 @@ def main(config):
     discriminator = instantiate(config.discriminator, _convert_="partial").to(device)
     logger.info(model)
 
-    torch.backends.cudnn.benchmark = True  # remove slow_dilated_conv2d
+    torch.backends.cudnn.benchmark = True  # optimize slow_dilated_conv2d
 
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)

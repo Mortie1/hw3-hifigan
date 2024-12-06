@@ -1,4 +1,5 @@
 import torch
+import torchaudio
 from tqdm.auto import tqdm
 
 from src.metrics.tracker import MetricTracker
@@ -24,6 +25,7 @@ class Inferencer(BaseTrainer):
         metrics=None,
         batch_transforms=None,
         skip_model_load=False,
+        model_sample_rate=None,
     ):
         """
         Initialize the Inferencer.
@@ -57,12 +59,15 @@ class Inferencer(BaseTrainer):
         self.device = device
 
         self.model = model
+        self.model.eval()
+        self.model.compile()
         self.batch_transforms = batch_transforms
 
         # define dataloaders
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
 
         # path definition
+        self.model_sample_rate = model_sample_rate
 
         self.save_path = save_path
 
@@ -116,8 +121,6 @@ class Inferencer(BaseTrainer):
                 the dataloader (possibly transformed via batch transform)
                 and model outputs.
         """
-        # TODO change inference logic so it suits ASR assignment
-        # and task pipeline
 
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
@@ -132,23 +135,21 @@ class Inferencer(BaseTrainer):
         # Some saving logic. This is an example
         # Use if you need to save predictions on disk
 
-        batch_size = batch["logits"].shape[0]
-        current_id = batch_idx * batch_size
+        batch_size = batch["output_audio"].shape[0]
 
         for i in range(batch_size):
             # clone because of
             # https://github.com/pytorch/pytorch/issues/1995
-            # output_audio = batch["output_audio"][i].clone()
-            output_id = current_id + i
-
-            output = {
-                "pred_label": ...,
-                "label": ...,
-            }
+            output_audio = batch["output_audio"][i].clone().detach().cpu().unsqueeze(0)
+            output_id = str(batch["path"][i]).split("/")[-1].split(".")[0]
 
             if self.save_path is not None:
                 # you can use safetensors or other lib here
-                torch.save(output, self.save_path / part / f"output_{output_id}.pth")
+                torchaudio.save(
+                    self.save_path / part / f"output_{output_id}.wav",
+                    output_audio,
+                    sample_rate=self.model_sample_rate,
+                )
 
         return batch
 
