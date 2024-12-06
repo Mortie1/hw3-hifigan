@@ -138,15 +138,12 @@ class Inferencer(BaseTrainer):
         for i in range(batch_size):
             # clone because of
             # https://github.com/pytorch/pytorch/issues/1995
-            logits = batch["logits"][i].clone()
-            label = batch["labels"][i].clone()
-            pred_label = logits.argmax(dim=-1)
-
+            # output_audio = batch["output_audio"][i].clone()
             output_id = current_id + i
 
             output = {
-                "pred_label": pred_label,
-                "label": label,
+                "pred_label": ...,
+                "label": ...,
             }
 
             if self.save_path is not None:

@@ -74,8 +74,8 @@ class BaseDataset(Dataset):
                 (a single dataset element).
         """
         data_dict = self._index[ind]
-        audio_path = data_dict["path"]
-        audio = self.load_audio(audio_path)
+        path = data_dict["path"]
+        audio = self.load_audio(path) if path.split(".")[-1] == "wav" else None
         text = data_dict["text"]
 
         assert (
@@ -92,12 +92,9 @@ class BaseDataset(Dataset):
             "audio": audio,
             "spectrogram": spectrogram,
             "text": text,
-            "audio_path": audio_path,
+            "path": path,
         }
 
-        # TODO think of how to apply wave augs before calculating spectrogram
-        # Note: you may want to preserve both audio in time domain and
-        # in time-frequency domain for logging
         instance_data = self.preprocess_data(instance_data)
 
         return instance_data
@@ -143,12 +140,13 @@ class BaseDataset(Dataset):
                 of the tensors.
         """
 
-        batch = {"audio": [], "spectrogram": [], "text": []}
+        batch = {"audio": [], "spectrogram": [], "text": [], "path": []}
 
         for item in dataset_items:
             batch["audio"] += item["audio"]
             batch["spectrogram"] += item["spectrogram"].transpose(1, 2)
-            batch["text"] += item["text"]
+            batch["text"] += [item["text"]]
+            batch["path"] += [item["path"]]
 
         batch["audio"] = torch.nn.utils.rnn.pad_sequence(
             batch["audio"], batch_first=True
