@@ -8,6 +8,7 @@ from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
+from src.transforms.spectrogram import MelSpectrogramConfig
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -97,6 +98,9 @@ def main(config):
         skip_oom=config.trainer.get("skip_oom", True),
         amp_dtype=instantiate(config.trainer.get("amp_dtype", None)),
         compile_model=config.trainer.get("compile_model", False),
+        melspec_config=instantiate(
+            config.trainer.get("melspec_config", MelSpectrogramConfig())
+        ),
     )
 
     trainer.train()

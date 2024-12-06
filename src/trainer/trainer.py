@@ -102,51 +102,27 @@ class Trainer(BaseTrainer):
             mode (str): train or inference. Defines which logging
                 rules to apply.
         """
-        # method to log data from you batch
-        # such as audio, text or images, for example
-
-        # logging scheme might be different for different partitions
-        if mode == "train":  # the method is called only every self.log_step steps
-            self.log_spectrogram(**batch)
-            self.log_predictions(**batch)
-        else:
-            # Log Stuff
-            self.log_spectrogram(**batch)
-            self.log_predictions(**batch)
+        self.log_spectrogram(**batch)
+        self.log_predictions(**batch)
 
     def log_spectrogram(self, spectrogram, output_audio, **batch):
         spectrogram_for_plot = spectrogram[0].detach().cpu()
-        output_spectrogram = MelSpectrogram(MelSpectrogramConfig())(
-            output_audio.detach().cpu()
-        )[0]
+        output_spectrogram = self.mel_spec(output_audio.detach())[0]  # TODO: fix this
         image = plot_spectrogram(spectrogram_for_plot)
-        output_image = plot_spectrogram(output_spectrogram)
+        output_image = plot_spectrogram(output_spectrogram.cpu())
         self.writer.add_image("spectrogram", image)
         self.writer.add_image("output_spectrogram", output_image)
 
     def log_audio(self, audio, name):
-        def _normalize_audio(audio: torch.Tensor):
-            audio /= torch.max(torch.abs(audio))
-            return audio.detach().cpu()
-
-        audio = _normalize_audio(audio)
+        audio /= torch.max(torch.abs(audio))  # normalize volume
+        audio = audio.detach().cpu()
         self.writer.add_audio(
             name,
-            audio.float(),
+            audio.float(),  # needed for mixed precision training
             sample_rate=self.config.writer.audio_sample_rate,
         )
 
     def log_predictions(self, output_audio, audio, examples_to_log=1, **batch):
-        # columns = ["output audio", "ground truth"]
-        # data = [
-        #     [
-        #         self.writer.convert_audio(output_audio[i, :]),
-        #         self.writer.convert_audio(audio[i, :]),
-        #     ]
-        #     for i in range(examples_to_log)
-        # ]
-
-        # self.writer.add_wb_table("audios", columns=columns, data=data)
         for i in range(examples_to_log):
             self.log_audio(output_audio[i, :], f"output_audio_{i}")
             self.log_audio(audio[i, :], f"target_audio_{i}")

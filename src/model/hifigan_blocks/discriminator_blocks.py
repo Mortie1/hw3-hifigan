@@ -8,7 +8,10 @@ from src.model.hifigan_blocks.conv_block import Conv1dBlock, Conv2dBlock
 
 class MPDBlock(nn.Module):
     def __init__(
-        self, period: int, activation: nn.Module = nn.LeakyReLU(negative_slope=0.1)
+        self,
+        period: int,
+        n_main_convs: int = 4,
+        activation: nn.Module = nn.LeakyReLU(negative_slope=0.1),
     ):
         super().__init__()
         self.period = period
@@ -35,11 +38,11 @@ class MPDBlock(nn.Module):
                     activation=activation,
                     pre_activation=False,
                 )
-                for i in range(1, 4)
+                for i in range(1, n_main_convs)
             ]
             + [
                 Conv2dBlock(
-                    in_channels=2 ** (5 + 4),
+                    in_channels=2 ** (5 + n_main_convs),
                     out_channels=1024,
                     kernel_size=(5, 1),
                     padding=(2, 0),
@@ -78,11 +81,19 @@ class MPDBlock(nn.Module):
 
 
 class MultiPeriodDiscriminator(nn.Module):
-    def __init__(self):
+    def __init__(
+        self,
+        periods: List[int] = [2, 3, 5, 7, 11],
+        n_main_convs: int = 4,
+        activation: nn.Module = nn.LeakyReLU(negative_slope=0.1),
+    ):
         super().__init__()
 
         self.discriminators = nn.ModuleList(
-            [MPDBlock(period=i) for i in [2, 3, 5, 7, 11]]
+            [
+                MPDBlock(period=i, n_main_convs=n_main_convs, activation=activation)
+                for i in periods
+            ]
         )
 
     def forward(self, audio: torch.Tensor) -> List[List[torch.Tensor]]:
@@ -93,7 +104,11 @@ class MultiPeriodDiscriminator(nn.Module):
 
 
 class MSDBlock(nn.Module):
-    def __init__(self, activation: nn.Module = nn.LeakyReLU(negative_slope=0.1)):
+    def __init__(
+        self,
+        n_downsample_convs: int = 3,
+        activation: nn.Module = nn.LeakyReLU(negative_slope=0.1),
+    ):
         super().__init__()
         self.in_conv = Conv1dBlock(
             kernel_size=15,
@@ -118,13 +133,13 @@ class MSDBlock(nn.Module):
                     norm=nn.utils.parametrizations.weight_norm,
                     pre_activation=False,
                 )
-                for i in range(3)
+                for i in range(n_downsample_convs)
             ]
             + [
                 Conv1dBlock(
                     kernel_size=41,
                     stride=4,
-                    in_channels=1024,
+                    in_channels=16 * (4 ** (n_downsample_convs)),
                     out_channels=1024,
                     padding=20,
                     groups=256,

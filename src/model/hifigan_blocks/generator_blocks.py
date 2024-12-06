@@ -20,25 +20,38 @@ class ResBlock(nn.Module):
         self.kernel_size = kernel_size
         self.dilations = dilations
 
-        self.convs = nn.Sequential(
-            *[
-                Conv1dBlock(
-                    in_channels=self.n_channels,
-                    out_channels=self.n_channels,
-                    kernel_size=kernel_size,
-                    padding=dilation * (kernel_size - 1) // 2,
-                    dilation=dilation,
-                    activation=activation,
-                    norm=norm,
-                    pre_activation=True,
+        self.convs = nn.ModuleList(
+            [
+                nn.Sequential(
+                    Conv1dBlock(
+                        in_channels=self.n_channels,
+                        out_channels=self.n_channels,
+                        kernel_size=kernel_size,
+                        padding=dilation * (kernel_size - 1) // 2,
+                        dilation=dilation,
+                        activation=activation,
+                        norm=norm,
+                        pre_activation=True,
+                    ),
+                    Conv1dBlock(
+                        in_channels=self.n_channels,
+                        out_channels=self.n_channels,
+                        kernel_size=kernel_size,
+                        padding=(kernel_size - 1) // 2,
+                        dilation=1,
+                        activation=activation,
+                        norm=norm,
+                        pre_activation=True,
+                    ),
                 )
                 for dilation in dilations
             ]
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = x + self.convs(x)
-        return out
+        for conv in self.convs:
+            x = x + conv(x)
+        return x
 
 
 class MRF(nn.Module):

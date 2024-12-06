@@ -15,18 +15,28 @@ class DiscriminatorLoss(nn.Module):
         mpd_generated_features,
         **batch,
     ):
+        mpd_loss = 0
+        msd_loss = 0
         for feature_gen_msd, feature_true_msd, feature_gen_mpd, feature_true_mpd in zip(
-            msd_generated_features[-1],
-            msd_target_features[-1],
-            mpd_generated_features[-1],
-            mpd_target_features[-1],
+            msd_generated_features,
+            msd_target_features,
+            mpd_generated_features,
+            mpd_target_features,
         ):
-            mpd_loss = self.loss(
-                feature_true_mpd, torch.ones_like(feature_true_mpd)
-            ) + self.loss(feature_gen_mpd, torch.zeros_like(feature_gen_mpd))
+            mpd_loss = (
+                mpd_loss
+                + self.loss(feature_true_mpd[-1], torch.ones_like(feature_true_mpd[-1]))
+                + self.loss(feature_gen_mpd[-1], torch.zeros_like(feature_gen_mpd[-1]))
+            )
 
-            msd_loss = self.loss(
-                feature_true_msd, torch.ones_like(feature_true_msd)
-            ) + self.loss(feature_gen_msd, torch.zeros_like(feature_gen_msd))
+            msd_loss = (
+                msd_loss
+                + self.loss(feature_true_msd[-1], torch.ones_like(feature_true_msd[-1]))
+                + self.loss(feature_gen_msd[-1], torch.zeros_like(feature_gen_msd[-1]))
+            )
 
-        return {"discriminator_loss": msd_loss + mpd_loss}
+        return {
+            "discriminator_loss": msd_loss + mpd_loss,
+            "mpd_loss": mpd_loss,
+            "msd_loss": msd_loss,
+        }

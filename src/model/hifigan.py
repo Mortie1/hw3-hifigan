@@ -17,7 +17,7 @@ class HiFiGanGenerator(nn.Module):
         hidden_channels: int = 512,
         upsampling_kernels: List[int] = [16, 16, 4, 4],
         mrf_kernels: List[int] = [3, 7, 11],
-        mrf_dilations: List[List[Tuple[int, int]]] = [[1, 3, 5] * 3],
+        mrf_dilations: List[List[int]] = [[1, 3, 5], [1, 3, 5], [1, 3, 5]],
         activation: nn.Module = nn.LeakyReLU(negative_slope=0.1),
         norm: Optional[Callable] = nn.utils.parametrizations.weight_norm,
     ):

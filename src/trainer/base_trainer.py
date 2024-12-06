@@ -7,9 +7,8 @@ from tqdm.auto import tqdm
 
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
+from src.transforms.spectrogram import MelSpectrogram, MelSpectrogramConfig
 from src.utils.io_utils import ROOT_PATH
-
-# from torch.profiler import profile, record_function, ProfilerActivity
 
 
 class BaseTrainer:
@@ -38,6 +37,7 @@ class BaseTrainer:
         batch_transforms=None,
         amp_dtype=None,
         compile_model=None,
+        melspec_config=MelSpectrogramConfig(),
     ):
         """
         Args:
@@ -156,6 +156,8 @@ class BaseTrainer:
 
         if config.trainer.get("from_pretrained") is not None:
             self._from_pretrained(config.trainer.get("from_pretrained"))
+
+        self.mel_spec = MelSpectrogram(melspec_config).to(self.device)
 
         self.amp_dtype = amp_dtype
 

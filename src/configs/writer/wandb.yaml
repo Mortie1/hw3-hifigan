@@ -1,9 +1,10 @@
 _target_: src.logger.WandBWriter
 project_name: "dla-hw3-hifigan"
 entity: null
-run_name: "night run - default hifigan v1"
-mode: "online"
-loss_names: ["loss"] # which losses to log (useful for multi-loss tasks, s.a. GANs)
+run_name: "check that everything trains with refactorings v5"
+# run_id: j06t8yjg  # REMOVE IF NOT NEEDED used to continue run
+mode: "offline"
+loss_names: ["loss", "discriminator_loss", "adv_loss", "melspec_loss", "fm_loss", "mpd_loss", "msd_loss"] # which losses to log (useful for multi-loss tasks, s.a. GANs)
 log_checkpoints: False # set to True if you want to log save_dir with checkpoints to W&B
 id_length: 8 # length of the run_id
 audio_sample_rate: 22050

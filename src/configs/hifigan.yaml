@@ -13,20 +13,25 @@ optimizer:
   betas: [0.8, 0.99]
   weight_decay: 0.01
 lr_scheduler:
-  _target_: torch.optim.lr_scheduler.ExponentialLR
-  gamma: 0.99999
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  T_max: 50000
+  eta_min: 1e-5
 loss_function:
   _target_: src.loss.GeneratorLoss
+  melspec_device: "cuda"
+  alpha_fm: 2.0
+  alpha_mel: 45.0
 discriminator_loss_function:
   _target_: src.loss.DiscriminatorLoss
 trainer:
   log_step: 100
-  n_epochs: 1
+  n_epochs: 100
   epoch_len: 500
   device_tensors: ["spectrogram", "audio"] # which tensors should be on device (ex. GPU)
-  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
+  # resume_from: /home/mortie/dla/hw3-hifigan/saved/final(?) fix of discriminator loss/checkpoint-epoch20.pth # null or path to the checkpoint dir with *.pth and config.yaml
+  from_pretrained: /home/mortie/dla/hw3-hifigan/saved/final(?) fix of discriminator loss/checkpoint-epoch100.pth
   device: auto # device name or "auto"
-  override: False # if True, will override the previous run with the same name
+  override: False  # if True, will override the previous run with the same name
   monitor: "min test_loss" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
   save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
   early_stop: ${trainer.n_epochs} # epochs for early stopping
