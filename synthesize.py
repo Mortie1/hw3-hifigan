@@ -1,3 +1,4 @@
+import os
 import warnings
 
 import hydra
@@ -10,6 +11,8 @@ from src.utils.init_utils import set_random_seed
 from src.utils.io_utils import ROOT_PATH
 
 warnings.filterwarnings("ignore", category=UserWarning)
+
+os.environ["HYDRA_FULL_ERROR"] = "1"
 
 
 @hydra.main(version_base=None, config_path="src/configs", config_name="synthesize")
@@ -28,6 +31,22 @@ def main(config):
         device = "cuda" if torch.cuda.is_available() else "cpu"
     else:
         device = config.inferencer.device
+
+    if config.text is not None:
+        config.datasets = {
+            "test": {
+                "_target_": "src.datasets.BaseDataset",
+                "instance_transforms": config.transforms.instance_transforms.inference,
+                "audio_chunk_size": -1,
+                "index": [
+                    {"text": config.text, "path": "cli_input.txt", "audio_len": 0}
+                ],
+            }
+        }
+
+        config.dataloader.batch_size = 1
+
+        # print(instantiate(config.datasets["test"])._index)
 
     # setup data_loader instances
     # batch_transforms should be put on device

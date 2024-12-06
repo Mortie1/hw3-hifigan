@@ -1,3 +1,4 @@
+from src.datasets.base_dataset import BaseDataset
 from src.datasets.custom_dir_audio_dataset import CustomDirAudioDataset
 from src.datasets.custom_dir_text_dataset import CustomDirTextDataset
 from src.datasets.ljspeech import LJspeechDataset
