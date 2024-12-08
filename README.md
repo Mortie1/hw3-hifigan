@@ -99,7 +99,7 @@ If you want to resynthesize audio from its spectrogram, use:
 python3 synthesize.py -cn=resynthesize 'datasets.test.audio_dir=<YOUR-PATH-TO-DIR-WITH-ORIGINAL-WAVS>' 'inferencer.save_path=<YOUR-OUTPUT-NAME>'
 ```
 
-You can find your outputs in `/data/saved/<YOUR-OUTPUT-NAME>` folder.
+You can find your outputs in `hw3-hifigan/data/saved/<YOUR-OUTPUT-NAME>` folder.
 
 IMPORTANT: synthesize command works with datasets of following structure (you need to pass path to NameOfTheDirectoryWithUtterances):
 
@@ -124,7 +124,7 @@ If you want to pass text from cli instead of dataset, use the following command:
 python3 synthesize.py -cn=synthesize 'text="Your text that you want to synthesize here."' 'inferencer.save_path=<YOUR-OUTPUT-PATH>'
 ```
 
-You can find your outputs in `/data/saved/<YOUR-OUTPUT-NAME>` folder.
+You can find your outputs in `hw3-hifigan/data/saved/<YOUR-OUTPUT-NAME>` folder.
 
 ## Credits
 
