@@ -1,18 +1,12 @@
-# Automatic Speech Recognition (ASR) with PyTorch
+# Neural vocoder (Hi-Fi GAN) with PyTorch
 
 <p align="center">
-  <a href="#about">About</a> •
   <a href="#installation">Installation</a> •
   <a href="#how-to-use">How To Use</a> •
+  <a href="#download-model">Download model</a> •
   <a href="#credits">Credits</a> •
   <a href="#license">License</a>
 </p>
-
-## About
-
-This repository contains a template for solving ASR task with PyTorch. This template branch is a part of the [HSE DLA course](https://github.com/markovka17/dla) ASR homework. Some parts of the code are missing (or do not follow the most optimal design choices...) and students are required to fill these parts themselves (as well as writing their own models, etc.).
-
-See the task assignment [here](https://github.com/markovka17/dla/tree/2024/hw1_asr).
 
 ## Installation
 
@@ -54,20 +48,77 @@ Follow these steps to install the project:
    pre-commit install
    ```
 
+## Download model
+
+To download my pretrained model, use commands below:
+
+1. Install `gdown`
+
+```bash
+pip install gdown
+```
+
+2. Download model
+```bash
+gdown https://drive.google.com/uc?id=1ZasGiyOPqx_LJPvdL0eNxIjhC8NB2s0r
+```
+
+3. Do not forget to pass path to your model in configs (`src/configs/synthesize.yaml` and `src/configs/resynthesize.yaml` - change `from_pretrained` value)
+
 ## How To Use
+
+#### Training
 
 To train a model, run the following command:
 
 ```bash
-python3 train.py -cn=CONFIG_NAME HYDRA_CONFIG_ARGUMENTS
+python3 train.py
 ```
 
-Where `CONFIG_NAME` is a config from `src/configs` and `HYDRA_CONFIG_ARGUMENTS` are optional arguments.
+This command will run training with `hw3-hifigan/src/configs/hifigan.yaml` config.
+You might want to change some configs, for example, path to pretrained model (if you want to finetune), and/or datasets/dataloaders/optimizers etc.
 
-To run inference (evaluate the model or save predictions):
+
+#### Synthesizing audio
+
+IMPORTANT: resynthesizing works with datasets of following structure (you need to pass path to NameOfTheDirectoryWithUtterances):
 
 ```bash
-python3 inference.py HYDRA_CONFIG_ARGUMENTS
+NameOfTheDirectoryWithUtterances
+├── UtteranceID1.wav
+├── UtteranceID2.wav
+.
+.
+.
+└── UtteranceIDn.wav
+```
+
+If you want to resynthesize audio from its spectrogram, use:
+```bash
+python3 synthesize.py -cn=resynthesize 'datasets.test.audio_dir=<YOUR-PATH-TO-DIR-WITH-ORIGINAL-WAVS>' 'inferencer.save_path=<YOUR-OUTPUT-PATH>'
+```
+
+IMPORTANT: synthesize command works with datasets of following structure (you need to pass path to NameOfTheDirectoryWithUtterances):
+
+```bash
+NameOfTheDirectoryWithUtterances
+└── transcriptions
+    ├── UtteranceID1.txt
+    ├── UtteranceID2.txt
+    .
+    .
+    .
+    └── UtteranceIDn.txt
+```
+
+If you want to synthesize wavs for texts that are located in .txt files, use the following command:
+```bash
+python3 synthesize.py -cn=synthesize 'datasets.test.data_dir=<YOUR-PATH-TO-DIR-WITH-TXT-FILES>' 'inferencer.save_path=<YOUR-OUTPUT-PATH>'
+```
+
+If you want to pass text from cli instead of dataset, use the following command:
+```bash
+python3 synthesize.py -cn=synthesize 'text="Your text that you want to synthesize here."' 'inferencer.save_path=<YOUR-OUTPUT-PATH>'
 ```
 
 ## Credits
