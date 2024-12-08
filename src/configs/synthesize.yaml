@@ -10,5 +10,5 @@ inferencer:
   device: auto # device name or "auto"
   save_path: "example" # any name here, can be a dataset name
   seed: 1
-  from_pretrained: "/home/mortie/dla/hw3-hifigan/saved/final(?) fix of discriminator loss/checkpoint-epoch100.pth" # path to the pretrained model
+  from_pretrained: "./checkpoint-epoch100.pth" # path to the pretrained model
 text: null

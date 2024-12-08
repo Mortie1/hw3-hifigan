@@ -9,11 +9,10 @@ matplotlib
 pandas
 wandb
 comet_ml
-hydra-core
 transformers
 datasets
 speechbrain
-fairseq
+fairseq @ git+https://github.com/facebookresearch/fairseq
 g2p_en
 nltk
 
